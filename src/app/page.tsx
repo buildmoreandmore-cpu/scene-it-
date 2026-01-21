@@ -109,9 +109,9 @@ export default function Home() {
         <header className="sticky top-0 z-40 h-16 sm:h-20 bg-brand-white/80 backdrop-blur-md border-b border-brand-stone flex items-center px-3 sm:px-6 md:px-10 justify-between gap-2 sm:gap-6 md:gap-8 transition-all duration-300">
           <button
             onClick={() => setView("landing")}
-            className="text-lg sm:text-2xl font-bold tracking-tighter text-brand-charcoal hover:opacity-70 transition-opacity flex-shrink-0"
+            className="hover:opacity-70 transition-opacity flex-shrink-0"
           >
-            Scene.it
+            <img src="/logo.png" alt="Scene.it" className="h-8 sm:h-10 w-auto" />
           </button>
 
           <div className="flex-1 max-w-[600px] transition-all duration-500">
@@ -201,9 +201,7 @@ function LandingPage({ onSearch }: { onSearch: (val: string) => void }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-brand-white animate-fade-in">
       <div className="text-center mb-6 sm:mb-10 select-none">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-4 text-brand-charcoal">
-          Scene.it
-        </h1>
+        <img src="/logo.png" alt="Scene.it" className="h-12 sm:h-16 md:h-20 w-auto mx-auto mb-4" />
         <div className="text-brand-stoneGray text-lg font-medium tracking-tight opacity-70">
           <p>See what you imagine.</p>
           <p>Find what you feel.</p>
