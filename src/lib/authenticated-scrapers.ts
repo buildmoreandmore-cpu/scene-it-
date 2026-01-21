@@ -1,4 +1,5 @@
-import puppeteer, { Browser } from "puppeteer";
+import puppeteer, { Browser } from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import { ScrapedImage } from "@/types";
 
 // Credentials from environment
@@ -11,12 +12,20 @@ const SHOTDECK_PASSWORD = process.env.SHOTDECK_PASSWORD;
 let browser: Browser | null = null;
 
 async function getBrowser(): Promise<Browser> {
-  if (!browser || !browser.connected) {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-    });
+  if (browser && browser.connected) {
+    return browser;
   }
+
+  // For Vercel serverless, use @sparticuz/chromium
+  const executablePath = await chromium.executablePath();
+
+  browser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: { width: 1280, height: 720 },
+    executablePath,
+    headless: true,
+  });
+
   return browser;
 }
 
@@ -29,9 +38,10 @@ export async function scrapePinterestAuth(query: string, limit = 30): Promise<Sc
 
   console.log("[Pinterest] Starting authenticated scrape for:", query);
 
+  let page;
   try {
     const browser = await getBrowser();
-    const page = await browser.newPage();
+    page = await browser.newPage();
 
     await page.setUserAgent(
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -53,9 +63,9 @@ export async function scrapePinterestAuth(query: string, limit = 30): Promise<Sc
 
     // Wait and scroll
     await new Promise((r) => setTimeout(r, 3000));
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
       await page.evaluate(() => window.scrollBy(0, window.innerHeight));
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise((r) => setTimeout(r, 1000));
     }
 
     // Extract images
@@ -87,6 +97,7 @@ export async function scrapePinterestAuth(query: string, limit = 30): Promise<Sc
     }));
   } catch (error) {
     console.error("[Pinterest] Error:", error);
+    if (page) await page.close().catch(() => {});
     return [];
   }
 }
@@ -100,16 +111,17 @@ export async function scrapeSaveeAuth(query: string, limit = 30): Promise<Scrape
 
   console.log("[Savee] Starting authenticated scrape for:", query);
 
+  let page;
   try {
     const browser = await getBrowser();
-    const page = await browser.newPage();
+    page = await browser.newPage();
 
     await page.setUserAgent(
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     );
 
     // Go to login page
-    await page.goto("https://savee.com/login/", { waitUntil: "networkidle2", timeout: 30000 });
+    await page.goto("https://savee.it/login/", { waitUntil: "networkidle2", timeout: 30000 });
     await new Promise((r) => setTimeout(r, 2000));
 
     // Try to find and click Google OAuth button
@@ -136,7 +148,7 @@ export async function scrapeSaveeAuth(query: string, limit = 30): Promise<Scrape
     }
 
     // Search
-    await page.goto(`https://savee.com/search/?q=${encodeURIComponent(query)}`, {
+    await page.goto(`https://savee.it/search/?q=${encodeURIComponent(query)}`, {
       waitUntil: "networkidle2",
       timeout: 30000,
     });
@@ -145,7 +157,7 @@ export async function scrapeSaveeAuth(query: string, limit = 30): Promise<Scrape
     await new Promise((r) => setTimeout(r, 3000));
     for (let i = 0; i < 3; i++) {
       await page.evaluate(() => window.scrollBy(0, window.innerHeight));
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise((r) => setTimeout(r, 1000));
     }
 
     // Extract images
@@ -162,7 +174,7 @@ export async function scrapeSaveeAuth(query: string, limit = 30): Promise<Scrape
           results.push({
             url: img.src,
             title: img.alt || "",
-            sourceUrl: (img.closest("a") as HTMLAnchorElement)?.href || "https://savee.com",
+            sourceUrl: (img.closest("a") as HTMLAnchorElement)?.href || "https://savee.it",
           });
         }
       });
@@ -182,6 +194,7 @@ export async function scrapeSaveeAuth(query: string, limit = 30): Promise<Scrape
     }));
   } catch (error) {
     console.error("[Savee] Error:", error);
+    if (page) await page.close().catch(() => {});
     return [];
   }
 }
@@ -195,9 +208,10 @@ export async function scrapeShotdeckAuth(query: string, limit = 30): Promise<Scr
 
   console.log("[Shotdeck] Starting authenticated scrape for:", query);
 
+  let page;
   try {
     const browser = await getBrowser();
-    const page = await browser.newPage();
+    page = await browser.newPage();
 
     await page.setUserAgent(
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -221,7 +235,7 @@ export async function scrapeShotdeckAuth(query: string, limit = 30): Promise<Scr
     await new Promise((r) => setTimeout(r, 3000));
     for (let i = 0; i < 3; i++) {
       await page.evaluate(() => window.scrollBy(0, window.innerHeight));
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise((r) => setTimeout(r, 1000));
     }
 
     // Extract images
@@ -253,6 +267,7 @@ export async function scrapeShotdeckAuth(query: string, limit = 30): Promise<Scr
     }));
   } catch (error) {
     console.error("[Shotdeck] Error:", error);
+    if (page) await page.close().catch(() => {});
     return [];
   }
 }
