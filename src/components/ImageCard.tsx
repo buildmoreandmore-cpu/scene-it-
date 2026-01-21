@@ -9,10 +9,11 @@ interface ImageCardProps {
   isSaved: boolean;
   onToggleSave: (e: React.MouseEvent) => void;
   onClick: () => void;
+  preloaded?: boolean;
 }
 
-export function ImageCard({ image, isSaved, onToggleSave, onClick }: ImageCardProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
+export function ImageCard({ image, isSaved, onToggleSave, onClick, preloaded = false }: ImageCardProps) {
+  const [isLoaded, setIsLoaded] = useState(preloaded);
 
   return (
     <div

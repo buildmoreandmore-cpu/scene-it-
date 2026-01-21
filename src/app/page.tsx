@@ -236,6 +236,7 @@ function ResultsPage({
                 onToggleSave(img);
               }}
               onClick={() => onSelect(img)}
+              preloaded
             />
           </div>
         ))}
