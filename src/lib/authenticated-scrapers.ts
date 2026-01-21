@@ -28,14 +28,15 @@ export async function scrapePinterestAuth(query: string, limit = 30): Promise<Sc
   }
 
   console.log("[Pinterest] Starting authenticated scrape for:", query);
-  const browser = await getBrowser();
-  const page = await browser.newPage();
-
-  await page.setUserAgent(
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  );
 
   try {
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+
+    await page.setUserAgent(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    );
+
     // Login
     await page.goto("https://www.pinterest.com/login/", { waitUntil: "networkidle2", timeout: 30000 });
     await page.waitForSelector('input[name="id"]', { timeout: 10000 });
@@ -86,7 +87,6 @@ export async function scrapePinterestAuth(query: string, limit = 30): Promise<Sc
     }));
   } catch (error) {
     console.error("[Pinterest] Error:", error);
-    await page.close();
     return [];
   }
 }
@@ -99,14 +99,15 @@ export async function scrapeSaveeAuth(query: string, limit = 30): Promise<Scrape
   }
 
   console.log("[Savee] Starting authenticated scrape for:", query);
-  const browser = await getBrowser();
-  const page = await browser.newPage();
-
-  await page.setUserAgent(
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  );
 
   try {
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+
+    await page.setUserAgent(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    );
+
     // Go to login page
     await page.goto("https://savee.com/login/", { waitUntil: "networkidle2", timeout: 30000 });
     await new Promise((r) => setTimeout(r, 2000));
@@ -181,7 +182,6 @@ export async function scrapeSaveeAuth(query: string, limit = 30): Promise<Scrape
     }));
   } catch (error) {
     console.error("[Savee] Error:", error);
-    await page.close();
     return [];
   }
 }
@@ -194,14 +194,15 @@ export async function scrapeShotdeckAuth(query: string, limit = 30): Promise<Scr
   }
 
   console.log("[Shotdeck] Starting authenticated scrape for:", query);
-  const browser = await getBrowser();
-  const page = await browser.newPage();
-
-  await page.setUserAgent(
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  );
 
   try {
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+
+    await page.setUserAgent(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    );
+
     // Login
     await page.goto("https://shotdeck.com/login", { waitUntil: "networkidle2", timeout: 30000 });
     await page.waitForSelector('input[type="email"]', { timeout: 10000 });
@@ -252,7 +253,6 @@ export async function scrapeShotdeckAuth(query: string, limit = 30): Promise<Scr
     }));
   } catch (error) {
     console.error("[Shotdeck] Error:", error);
-    await page.close();
     return [];
   }
 }

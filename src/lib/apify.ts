@@ -114,22 +114,26 @@ export async function scrapeArena(query: string, limit = 50): Promise<ScrapedIma
 export async function scrapeCosmos(query: string, limit = 50): Promise<ScrapedImage[]> {
   console.log("[Cosmos] Starting scrape for:", query);
   try {
+    // Search URL with query parameter
+    const searchUrl = `https://www.cosmos.so/search?q=${encodeURIComponent(query)}`;
+
     const run = await apifyClient.actor("apify/web-scraper").call({
-      startUrls: [{ url: "https://www.cosmos.so/discover" }],
+      startUrls: [{ url: searchUrl }],
       pageFunction: `async function pageFunction(context) {
         // Wait for page to load
-        await new Promise(r => setTimeout(r, 5000));
+        await new Promise(r => setTimeout(r, 6000));
         // Scroll to load more images
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 5; i++) {
           window.scrollBy(0, window.innerHeight);
-          await new Promise(r => setTimeout(r, 1500));
+          await new Promise(r => setTimeout(r, 2000));
         }
         // Extract images - we're already in browser context
         const images = [];
         document.querySelectorAll('img').forEach((img) => {
-          if (img.src && img.src.startsWith('http') && img.width > 100) {
+          const src = img.src || img.dataset?.src || '';
+          if (src && src.startsWith('http') && img.width > 100 && !src.includes('avatar') && !src.includes('profile') && !src.includes('logo')) {
             images.push({
-              imageUrl: img.src,
+              imageUrl: src,
               title: img.alt || '',
               pageUrl: img.closest('a')?.href || 'https://cosmos.so'
             });
@@ -138,7 +142,7 @@ export async function scrapeCosmos(query: string, limit = 50): Promise<ScrapedIm
         return images;
       }`,
       maxRequestsPerCrawl: 1,
-    }, { timeout: 90000 });
+    }, { timeout: 120000 });
 
     console.log("[Cosmos] Run completed:", run.status);
     const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
@@ -174,7 +178,7 @@ export async function scrapeSavee(_query: string, _limit = 50): Promise<ScrapedI
 // Multi-platform search
 export async function searchAllPlatforms(
   query: string,
-  platforms: ("pinterest" | "arena" | "cosmos" | "savee")[] = ["pinterest", "arena", "cosmos", "savee"],
+  platforms: ("pinterest" | "arena" | "cosmos" | "savee")[] = ["arena", "cosmos"],
   limitPerPlatform = 30
 ): Promise<ScrapedImage[]> {
   console.log("[Search] Starting search for:", query, "on platforms:", platforms);
