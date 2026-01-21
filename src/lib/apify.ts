@@ -113,19 +113,29 @@ export async function scrapeArena(query: string, limit = 50): Promise<ScrapedIma
 // Cosmos.so scraper using Apify web-scraper (handles JavaScript)
 export async function scrapeCosmos(query: string, limit = 50): Promise<ScrapedImage[]> {
   try {
+    // Scrape the discover page which has curated content, then scroll to load more
     const run = await apifyClient.actor("apify/web-scraper").call({
-      startUrls: [{ url: `https://cosmos.so/search?q=${encodeURIComponent(query)}` }],
+      startUrls: [{ url: `https://www.cosmos.so/discover` }],
       pageFunction: `async function pageFunction(context) {
         const { page, request } = context;
-        await page.waitForSelector('img', { timeout: 10000 }).catch(() => {});
-        await new Promise(r => setTimeout(r, 2000));
+
+        // Wait for initial images to load
+        await page.waitForSelector('img', { timeout: 15000 }).catch(() => {});
+
+        // Scroll down multiple times to load more images
+        for (let i = 0; i < 5; i++) {
+          await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+          await new Promise(r => setTimeout(r, 1500));
+        }
+
         const results = await page.evaluate(() => {
           const images = [];
           document.querySelectorAll('img').forEach((img) => {
             const src = img.src || img.dataset.src || '';
             const alt = img.alt || '';
             const link = img.closest('a')?.href || '';
-            if (src && src.startsWith('http') && !src.includes('avatar') && !src.includes('logo') && img.width > 100) {
+            // Filter out small images, avatars, logos, icons
+            if (src && src.startsWith('http') && !src.includes('avatar') && !src.includes('logo') && !src.includes('icon') && (img.naturalWidth > 150 || img.width > 150)) {
               images.push({ imageUrl: src, title: alt, pageUrl: link || 'https://cosmos.so' });
             }
           });
@@ -135,13 +145,26 @@ export async function scrapeCosmos(query: string, limit = 50): Promise<ScrapedIm
       }`,
       maxRequestsPerCrawl: 1,
       maxConcurrency: 1,
-    }, { timeout: 60000 });
+    }, { timeout: 90000 });
 
     const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
     const cosmosResults = (items.flat() as CosmosResult[]).filter(Boolean);
 
-    return cosmosResults
-      .filter((item) => item.imageUrl)
+    // Filter results by query keywords if they have titles
+    const queryTerms = query.toLowerCase().split(/\s+/);
+    const filteredResults = cosmosResults.filter((item) => {
+      if (!item.imageUrl) return false;
+      // If no title, include it anyway (we'll show discover content)
+      if (!item.title) return true;
+      const title = item.title.toLowerCase();
+      // Check if any query term appears in the title
+      return queryTerms.some(term => title.includes(term));
+    });
+
+    // If we have filtered results, use those; otherwise return all discover results
+    const finalResults = filteredResults.length > 5 ? filteredResults : cosmosResults.filter(item => item.imageUrl);
+
+    return finalResults
       .slice(0, limit)
       .map((item, index) => ({
         id: `cosmos-${Date.now()}-${index}`,
