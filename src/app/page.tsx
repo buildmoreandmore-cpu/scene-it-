@@ -13,12 +13,27 @@ export default function Home() {
   const [results, setResults] = useState<ScrapedImage[]>([]);
   const [savedImages, setSavedImages] = useState<ScrapedImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const [selectedImage, setSelectedImage] = useState<ScrapedImage | null>(null);
+
+  const preloadImages = async (images: ScrapedImage[]) => {
+    const promises = images.slice(0, 50).map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          const el = new window.Image();
+          el.onload = el.onerror = () => resolve();
+          el.src = img.thumbnailUrl || img.url;
+        })
+    );
+    await Promise.all(promises);
+    setImagesPreloaded(true);
+  };
 
   const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) return;
     setSearchQuery(query);
     setIsLoading(true);
+    setImagesPreloaded(false);
     setView("search");
 
     try {
@@ -31,12 +46,19 @@ export default function Home() {
       if (!response.ok) throw new Error("Search failed");
 
       const data = await response.json();
-      setResults(data.images || []);
+      const images = data.images || [];
+      setResults(images);
+      setIsLoading(false);
+      if (images.length > 0) {
+        await preloadImages(images);
+      } else {
+        setImagesPreloaded(true);
+      }
     } catch (error) {
       console.error("Search error:", error);
       setResults([]);
-    } finally {
       setIsLoading(false);
+      setImagesPreloaded(true);
     }
   }, []);
 
@@ -103,7 +125,7 @@ export default function Home() {
         {view === "search" && (
           <ResultsPage
             results={results}
-            isLoading={isLoading}
+            isLoading={isLoading || !imagesPreloaded}
             savedImages={savedImages}
             onToggleSave={toggleSave}
             onSelect={setSelectedImage}
@@ -200,6 +222,9 @@ function ResultsPage({
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6 sm:py-10 animate-fade-in">
+      <p className="text-sm text-brand-stoneGray mb-4">
+        Showing {results.length} images
+      </p>
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6">
         {results.map((img) => (
           <div key={img.id} className="break-inside-avoid mb-6">
