@@ -1,15 +1,23 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import Link from "next/link";
-import { Logo, SearchBar, ImageCard, LoadingGrid, Lightbox, Heart } from "@/components";
-import { ScrapedImage } from "@/types";
+import { Logo, SearchBar, ImageCard, LoadingGrid, Lightbox, Heart, RefineView } from "@/components";
+import { ScrapedImage, UserFilters } from "@/types";
 
-type View = "landing" | "search" | "saved";
+type View = "landing" | "refine" | "search" | "saved";
+
+const initialFilters: UserFilters = {
+  mood: [],
+  colors: [],
+  style: [],
+  negativeFilters: [],
+};
 
 export default function Home() {
   const [view, setView] = useState<View>("landing");
   const [searchQuery, setSearchQuery] = useState("");
+  const [pendingQuery, setPendingQuery] = useState("");
+  const [userFilters, setUserFilters] = useState<UserFilters>(initialFilters);
   const [results, setResults] = useState<ScrapedImage[]>([]);
   const [savedImages, setSavedImages] = useState<ScrapedImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,8 +37,16 @@ export default function Home() {
     setImagesPreloaded(true);
   };
 
-  const handleSearch = useCallback(async (query: string) => {
+  // Go to refine view when search is submitted
+  const handleSearch = useCallback((query: string) => {
     if (!query.trim()) return;
+    setPendingQuery(query);
+    setUserFilters(initialFilters);
+    setView("refine");
+  }, []);
+
+  // Execute the actual search with optional filters
+  const executeSearch = useCallback(async (query: string, filters?: UserFilters) => {
     setSearchQuery(query);
     setIsLoading(true);
     setImagesPreloaded(false);
@@ -40,7 +56,7 @@ export default function Home() {
       const response = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, userFilters: filters }),
       });
 
       if (!response.ok) throw new Error("Search failed");
@@ -62,6 +78,16 @@ export default function Home() {
     }
   }, []);
 
+  // Search with user-selected filters
+  const handleSearchWithFilters = useCallback(() => {
+    executeSearch(pendingQuery, userFilters);
+  }, [pendingQuery, userFilters, executeSearch]);
+
+  // Skip filters and search immediately
+  const handleSkipSearch = useCallback(() => {
+    executeSearch(pendingQuery);
+  }, [pendingQuery, executeSearch]);
+
   const toggleSave = (img: ScrapedImage) => {
     setSavedImages((prev) => {
       const isAlreadySaved = prev.some((s) => s.id === img.id);
@@ -74,11 +100,12 @@ export default function Home() {
   };
 
   const isLanding = view === "landing";
+  const isRefine = view === "refine";
 
   return (
     <div className="min-h-screen bg-brand-white text-brand-stoneDark">
-      {/* Header - shown on search and saved views */}
-      {!isLanding && (
+      {/* Header - shown on search and saved views (not landing or refine) */}
+      {!isLanding && !isRefine && (
         <header className="sticky top-0 z-40 h-20 bg-brand-white/80 backdrop-blur-md border-b border-brand-stone flex items-center px-4 sm:px-6 md:px-10 justify-between gap-3 sm:gap-6 md:gap-8 transition-all duration-300">
           <button
             onClick={() => setView("landing")}
@@ -120,6 +147,17 @@ export default function Home() {
       <main>
         {/* Landing Page */}
         {view === "landing" && <LandingPage onSearch={handleSearch} />}
+
+        {/* Refine View */}
+        {view === "refine" && (
+          <RefineView
+            query={pendingQuery}
+            filters={userFilters}
+            onFilterChange={setUserFilters}
+            onSearchWithFilters={handleSearchWithFilters}
+            onSkipSearch={handleSkipSearch}
+          />
+        )}
 
         {/* Search Results */}
         {view === "search" && (

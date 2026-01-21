@@ -1,24 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseSearchIntent, generateSuggestions, scoreImageRelevance } from "@/lib/ai";
+import { parseSearchIntent, generateSuggestions, scoreImageRelevance, SearchIntent } from "@/lib/ai";
 import { searchAllPlatforms } from "@/lib/apify";
+import { UserFilters } from "@/types/filters";
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, platforms } = await request.json();
+    const { query, platforms, userFilters } = await request.json();
 
     if (!query || typeof query !== "string") {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
     }
 
     // Parse search intent with AI
-    const intent = await parseSearchIntent(query);
+    const aiIntent = await parseSearchIntent(query);
+
+    // Merge user-selected filters with AI-parsed intent
+    const intent: SearchIntent = {
+      ...aiIntent,
+      mood: [...new Set([...(userFilters?.mood || []), ...aiIntent.mood])],
+      colors: [...new Set([...(userFilters?.colors || []), ...aiIntent.colors])],
+      style: [...new Set([...(userFilters?.style || []), ...aiIntent.style])],
+      negativeFilters: [...new Set([...(userFilters?.negativeFilters || []), ...aiIntent.negativeFilters])],
+    };
 
     // Search platforms in parallel
-    // Note: Only arena is currently active. Pinterest/Cosmos/Savee disabled (require paid Apify actors)
+    // Note: Pinterest disabled (requires paid Apify actor). Arena, Cosmos, Savee active.
     const [images, suggestions] = await Promise.all([
       searchAllPlatforms(
         intent.refinedQuery || query,
-        platforms || ["arena"],
+        platforms || ["arena", "cosmos", "savee"],
         30
       ),
       generateSuggestions(query, intent.mood),
@@ -68,7 +78,7 @@ export async function GET(request: NextRequest) {
 
   // Redirect to POST handler logic
   const intent = await parseSearchIntent(query);
-  const images = await searchAllPlatforms(intent.refinedQuery || query, ["arena"], 30);
+  const images = await searchAllPlatforms(intent.refinedQuery || query, ["arena", "cosmos", "savee"], 30);
 
   return NextResponse.json({
     images,

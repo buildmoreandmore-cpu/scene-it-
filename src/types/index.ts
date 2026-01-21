@@ -1,4 +1,5 @@
 export * from "./database";
+export * from "./filters";
 
 export interface SearchState {
   query: string;

@@ -3,6 +3,8 @@ export { SearchBar } from "./SearchBar";
 export { ImageCard } from "./ImageCard";
 export { ImageGrid } from "./ImageGrid";
 export { FilterChips } from "./FilterChips";
+export { FilterSelector } from "./FilterSelector";
+export { RefineView } from "./RefineView";
 export { EmptyState } from "./EmptyState";
 export { LoadingGrid, SkeletonGrid } from "./LoadingGrid";
 export { Lightbox } from "./Lightbox";
