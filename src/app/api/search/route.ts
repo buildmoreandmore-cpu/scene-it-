@@ -44,12 +44,53 @@ export async function POST(request: NextRequest) {
     // Combine all images
     const images = [...apifyImages, ...authImages];
 
+    // Default filters to always exclude (text-heavy, articles, irrelevant content)
+    const defaultNegativePatterns = [
+      "article", "blog", "news", "tweet", "post", "thread", "comment",
+      "screenshot", "infographic", "chart", "diagram", "meme",
+      "logo", "icon", "banner", "ad", "advertisement",
+      "text", "quote", "typography", "font",
+      "website", "webpage", "browser", "app store",
+      "book cover", "magazine cover", "album cover",
+      "thumbnail", "preview", "placeholder"
+    ];
+
+    // URL patterns that indicate non-photo content
+    const badUrlPatterns = [
+      /medium\.com/i, /substack/i, /wordpress/i, /blogger/i,
+      /twitter\.com/i, /x\.com/i, /facebook/i, /linkedin/i,
+      /reddit\.com/i, /imgur\.com\/a\//i,
+      /\.gif$/i, /\.svg$/i,
+      /avatar/i, /profile/i, /thumb.*small/i
+    ];
+
     // Filter out images that match negative filters
     const filteredImages = images.filter((img) => {
       const text = `${img.title} ${img.description || ""}`.toLowerCase();
-      return !intent.negativeFilters.some((filter) =>
+      const url = (img.url + img.sourceUrl).toLowerCase();
+
+      // Check user/AI negative filters
+      const matchesNegativeFilter = intent.negativeFilters.some((filter) =>
         text.includes(filter.toLowerCase())
       );
+      if (matchesNegativeFilter) return false;
+
+      // Check default negative patterns
+      const matchesDefaultPattern = defaultNegativePatterns.some((pattern) =>
+        text.includes(pattern)
+      );
+      if (matchesDefaultPattern) return false;
+
+      // Check URL patterns
+      const matchesBadUrl = badUrlPatterns.some((pattern) =>
+        pattern.test(url)
+      );
+      if (matchesBadUrl) return false;
+
+      // Filter out very short titles that are likely not descriptive photos
+      if (img.title && img.title.length > 100) return false;
+
+      return true;
     });
 
     // Score and rank images by relevance (only use title/description, not URL)
@@ -61,6 +102,7 @@ export async function POST(request: NextRequest) {
           intent
         ),
       }))
+      .filter((img) => img.relevance > 0.3) // Filter out low relevance images
       .sort((a, b) => b.relevance - a.relevance);
 
     return NextResponse.json({

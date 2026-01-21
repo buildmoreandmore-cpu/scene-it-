@@ -42,7 +42,9 @@ export async function parseSearchIntent(query: string): Promise<SearchIntent> {
       },
     });
 
-    const prompt = `You are a visual search intent parser for a creative image discovery platform.
+    const prompt = `You are a visual search intent parser for a creative discovery platform used by art directors, creative directors, and filmmakers.
+These professionals search for reference imagery, mood board material, and visual inspiration for projects.
+Interpret queries with this creative industry context in mind.
 Parse the user's search query and extract structured information.
 
 Return JSON with these fields:
@@ -53,10 +55,11 @@ Return JSON with these fields:
 - subjects: main subjects/objects in the image
 - negativeFilters: content types to EXCLUDE
 
-IMPORTANT for negativeFilters:
-- If searching for real photos of people/places, add: ["illustration", "vector", "clip art", "book cover", "magazine", "poster", "graphic design", "logo", "icon", "screenshot"]
-- If searching for art/design, add: ["stock photo", "amateur"]
-- Always consider what the user does NOT want to see
+IMPORTANT for negativeFilters - ALWAYS include these unless the user explicitly wants them:
+- For photos of people/places: ["illustration", "vector", "clip art", "book cover", "magazine", "poster", "graphic design", "logo", "icon", "screenshot", "article", "text", "infographic", "meme", "tweet", "social media post", "news", "blog", "website", "chart", "diagram", "cartoon", "anime", "comic"]
+- For art/design: ["stock photo", "amateur", "low quality"]
+- Always aggressively filter out text-heavy content, articles, and social media screenshots
+- Default to photo/visual content unless user asks for illustrations or graphics
 
 User query: "${query}"`;
 
@@ -94,7 +97,8 @@ export async function generateSuggestions(query: string, mood?: string[]): Promi
       },
     });
 
-    const prompt = `Generate 5 related visual search queries for a creative discovery platform.
+    const prompt = `Generate 5 related visual search queries for creative professionals (art directors, creative directors, filmmakers).
+Think like someone building a mood board or seeking visual reference for a project.
 Return JSON with: { "suggestions": ["query1", "query2", ...] }
 Make suggestions progressively more specific and creative.
 
@@ -118,25 +122,64 @@ export function scoreImageRelevance(
   intent: SearchIntent
 ): number {
   const text = imageText.toLowerCase();
-  let score = 0.5; // Start with neutral score
+  let score = 0.4; // Start slightly below neutral
 
-  // Positive scoring: keywords from intent
-  const allKeywords = [
-    ...intent.subjects,
-    ...intent.mood,
-    ...intent.style,
-  ].map((k) => k.toLowerCase());
+  // Primary subjects are most important - higher weight
+  for (const subject of intent.subjects) {
+    const subjectLower = subject.toLowerCase();
+    if (text.includes(subjectLower)) {
+      score += 0.2;
+    }
+    // Partial match for compound words
+    const words = subjectLower.split(/\s+/);
+    for (const word of words) {
+      if (word.length > 3 && text.includes(word)) {
+        score += 0.05;
+      }
+    }
+  }
 
-  for (const keyword of allKeywords) {
-    if (text.includes(keyword)) {
+  // Mood keywords
+  for (const mood of intent.mood) {
+    if (text.includes(mood.toLowerCase())) {
       score += 0.1;
     }
   }
 
-  // Penalty for AI-specified negative filters only
+  // Style keywords
+  for (const style of intent.style) {
+    if (text.includes(style.toLowerCase())) {
+      score += 0.1;
+    }
+  }
+
+  // Color keywords
+  for (const color of intent.colors) {
+    if (text.includes(color.toLowerCase())) {
+      score += 0.05;
+    }
+  }
+
+  // Penalty for negative filters
   for (const filter of intent.negativeFilters) {
     if (text.includes(filter.toLowerCase())) {
-      score -= 0.2;
+      score -= 0.3;
+    }
+  }
+
+  // Penalty for common irrelevant terms
+  const penaltyTerms = ["article", "blog", "news", "meme", "funny", "lol", "wtf", "omg"];
+  for (const term of penaltyTerms) {
+    if (text.includes(term)) {
+      score -= 0.15;
+    }
+  }
+
+  // Bonus for photography-related terms
+  const photoTerms = ["photo", "photograph", "shot", "portrait", "candid", "capture"];
+  for (const term of photoTerms) {
+    if (text.includes(term)) {
+      score += 0.05;
     }
   }
 
