@@ -48,7 +48,7 @@ export function FilterSelector({
               transition={{ delay: index * 0.02 }}
               onClick={() => onToggle(option.id)}
               className={cn(
-                "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-95",
+                "inline-flex items-center gap-2 rounded-full px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium transition-all duration-200 active:scale-95 min-h-[44px] sm:min-h-0",
                 isSelected
                   ? chipColors[variant].active
                   : chipColors[variant].inactive

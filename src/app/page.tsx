@@ -106,10 +106,10 @@ export default function Home() {
     <div className="min-h-screen bg-brand-white text-brand-stoneDark">
       {/* Header - shown on search and saved views (not landing or refine) */}
       {!isLanding && !isRefine && (
-        <header className="sticky top-0 z-40 h-20 bg-brand-white/80 backdrop-blur-md border-b border-brand-stone flex items-center px-4 sm:px-6 md:px-10 justify-between gap-3 sm:gap-6 md:gap-8 transition-all duration-300">
+        <header className="sticky top-0 z-40 h-16 sm:h-20 bg-brand-white/80 backdrop-blur-md border-b border-brand-stone flex items-center px-3 sm:px-6 md:px-10 justify-between gap-2 sm:gap-6 md:gap-8 transition-all duration-300">
           <button
             onClick={() => setView("landing")}
-            className="text-2xl font-bold tracking-tighter text-brand-charcoal hover:opacity-70 transition-opacity"
+            className="text-lg sm:text-2xl font-bold tracking-tighter text-brand-charcoal hover:opacity-70 transition-opacity flex-shrink-0"
           >
             Scene.it
           </button>
