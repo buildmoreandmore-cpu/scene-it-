@@ -14,10 +14,11 @@ export async function POST(request: NextRequest) {
     const intent = await parseSearchIntent(query);
 
     // Search platforms in parallel
+    // Note: Only arena is currently active. Pinterest/Cosmos/Savee disabled (require paid Apify actors)
     const [images, suggestions] = await Promise.all([
       searchAllPlatforms(
         intent.refinedQuery || query,
-        platforms || ["pinterest", "arena", "cosmos", "savee"],
+        platforms || ["arena"],
         30
       ),
       generateSuggestions(query, intent.mood),
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
 
   // Redirect to POST handler logic
   const intent = await parseSearchIntent(query);
-  const images = await searchAllPlatforms(intent.refinedQuery || query, ["pinterest", "arena", "cosmos", "savee"], 30);
+  const images = await searchAllPlatforms(intent.refinedQuery || query, ["arena"], 30);
 
   return NextResponse.json({
     images,

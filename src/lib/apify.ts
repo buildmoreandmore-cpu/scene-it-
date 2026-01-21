@@ -62,31 +62,11 @@ interface SaveeResult {
   author?: string;
 }
 
-// Pinterest scraper using Apify
-export async function scrapePinterest(query: string, limit = 50): Promise<ScrapedImage[]> {
-  try {
-    const run = await apifyClient.actor("dSCLg0C3YEZ83HzYX").call({
-      search: query,
-      maxItems: limit,
-    });
-
-    const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
-
-    return (items as PinterestResult[]).map((item, index) => ({
-      id: `pinterest-${index}-${Date.now()}`,
-      url: item.imageUrl || item.image || "",
-      thumbnailUrl: item.imageUrl || item.image || "",
-      title: item.title || "",
-      description: item.description,
-      source: "pinterest" as const,
-      sourceUrl: item.url || item.link || "",
-      author: item.pinner?.name,
-      authorUrl: item.pinner?.url,
-    }));
-  } catch (error) {
-    console.error("Pinterest scraping error:", error);
-    return [];
-  }
+// Pinterest scraper - disabled (requires paid Apify actor subscription)
+export async function scrapePinterest(_query: string, _limit = 50): Promise<ScrapedImage[]> {
+  // TODO: Subscribe to easyapi/pinterest-search-scraper or find free alternative
+  console.log("Pinterest scraper requires paid Apify subscription");
+  return [];
 }
 
 // Are.na API (free, no auth needed for public content)
@@ -130,106 +110,18 @@ export async function scrapeArena(query: string, limit = 50): Promise<ScrapedIma
   }
 }
 
-// Cosmos.so scraper using Apify Web Scraper
-export async function scrapeCosmos(query: string, limit = 50): Promise<ScrapedImage[]> {
-  try {
-    // Use Apify's Cheerio Scraper for cosmos.so
-    const run = await apifyClient.actor("apify/cheerio-scraper").call({
-      startUrls: [
-        { url: `https://cosmos.so/search?q=${encodeURIComponent(query)}` },
-      ],
-      pageFunction: `async function pageFunction(context) {
-        const { $, request } = context;
-        const results = [];
-
-        $('img[src*="cosmos"]').each((i, el) => {
-          const $el = $(el);
-          const imageUrl = $el.attr('src') || '';
-          const title = $el.attr('alt') || '';
-          const parentLink = $el.closest('a').attr('href') || '';
-
-          if (imageUrl && imageUrl.includes('http')) {
-            results.push({
-              imageUrl,
-              title,
-              pageUrl: parentLink.startsWith('http') ? parentLink : 'https://cosmos.so' + parentLink,
-            });
-          }
-        });
-
-        return results;
-      }`,
-      maxRequestsPerCrawl: 5,
-    });
-
-    const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
-    const flatItems = (items as unknown as CosmosResult[][]).flat().slice(0, limit);
-
-    return flatItems.map((item, index) => ({
-      id: `cosmos-${index}-${Date.now()}`,
-      url: item.imageUrl || "",
-      thumbnailUrl: item.imageUrl || "",
-      title: item.title || "",
-      description: item.description,
-      source: "cosmos" as const,
-      sourceUrl: item.pageUrl || "https://cosmos.so",
-      author: item.author,
-    }));
-  } catch (error) {
-    console.error("Cosmos scraping error:", error);
-    return [];
-  }
+// Cosmos.so scraper - disabled due to Apify cheerio-scraper issues
+export async function scrapeCosmos(_query: string, _limit = 50): Promise<ScrapedImage[]> {
+  // TODO: Fix cheerio-scraper pageFunction syntax or find alternative
+  console.log("Cosmos scraper temporarily disabled");
+  return [];
 }
 
-// Savee.it scraper using Apify Web Scraper
-export async function scrapeSavee(query: string, limit = 50): Promise<ScrapedImage[]> {
-  try {
-    // Use Apify's Cheerio Scraper for savee.it
-    const run = await apifyClient.actor("apify/cheerio-scraper").call({
-      startUrls: [
-        { url: `https://savee.it/search/?q=${encodeURIComponent(query)}` },
-      ],
-      pageFunction: `async function pageFunction(context) {
-        const { $, request } = context;
-        const results = [];
-
-        $('img').each((i, el) => {
-          const $el = $(el);
-          const imageUrl = $el.attr('src') || $el.attr('data-src') || '';
-          const title = $el.attr('alt') || '';
-          const parentLink = $el.closest('a').attr('href') || '';
-
-          if (imageUrl && imageUrl.includes('http') && !imageUrl.includes('avatar')) {
-            results.push({
-              imageUrl,
-              title,
-              pageUrl: parentLink.startsWith('http') ? parentLink : 'https://savee.it' + parentLink,
-            });
-          }
-        });
-
-        return results;
-      }`,
-      maxRequestsPerCrawl: 5,
-    });
-
-    const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
-    const flatItems = (items as unknown as SaveeResult[][]).flat().slice(0, limit);
-
-    return flatItems.map((item, index) => ({
-      id: `savee-${index}-${Date.now()}`,
-      url: item.imageUrl || "",
-      thumbnailUrl: item.imageUrl || "",
-      title: item.title || "",
-      description: item.description,
-      source: "savee" as const,
-      sourceUrl: item.pageUrl || "https://savee.it",
-      author: item.author,
-    }));
-  } catch (error) {
-    console.error("Savee scraping error:", error);
-    return [];
-  }
+// Savee.it scraper - disabled due to Apify cheerio-scraper issues
+export async function scrapeSavee(_query: string, _limit = 50): Promise<ScrapedImage[]> {
+  // TODO: Fix cheerio-scraper pageFunction syntax or find alternative
+  console.log("Savee scraper temporarily disabled");
+  return [];
 }
 
 // Multi-platform search
