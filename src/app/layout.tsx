@@ -15,21 +15,23 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Scene.it - AI Visual Discovery",
+  title: "Scene.it - Visual Research for Creatives",
   description:
-    "See what you imagine. Find what you feel. The professional's visual intelligence tool for designers and creatives.",
+    "Reference search for art directors, creative directors, and filmmakers. Find the visual inspiration you need.",
   keywords: [
-    "visual search",
-    "AI image search",
-    "creative discovery",
-    "design inspiration",
+    "visual research",
+    "creative reference",
     "mood board",
+    "art direction",
+    "film reference",
+    "visual inspiration",
   ],
   authors: [{ name: "Scene.it" }],
   openGraph: {
-    title: "Scene.it - AI Visual Discovery",
-    description: "See what you imagine. Find what you feel.",
+    title: "Scene.it - Visual Research for Creatives",
+    description: "Reference search for art directors, creative directors, and filmmakers.",
     type: "website",
+    url: "https://sceneit.dev",
   },
 };
 
