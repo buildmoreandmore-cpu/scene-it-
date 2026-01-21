@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseSearchIntent, generateSuggestions } from "@/lib/ai";
+import { parseSearchIntent, generateSuggestions, scoreImageRelevance } from "@/lib/ai";
 import { searchAllPlatforms } from "@/lib/apify";
 
 export async function POST(request: NextRequest) {
@@ -31,11 +31,23 @@ export async function POST(request: NextRequest) {
       );
     });
 
+    // Score and rank images by relevance
+    const scoredImages = filteredImages
+      .map((img) => ({
+        ...img,
+        relevance: scoreImageRelevance(
+          `${img.title} ${img.description || ""} ${img.url}`,
+          intent
+        ),
+      }))
+      .filter((img) => img.relevance >= 0.1) // Remove very low matches
+      .sort((a, b) => b.relevance - a.relevance);
+
     return NextResponse.json({
-      images: filteredImages,
+      images: scoredImages,
       intent,
       suggestions,
-      total: filteredImages.length,
+      total: scoredImages.length,
     });
   } catch (error) {
     console.error("Search error:", error);

@@ -42,20 +42,23 @@ export async function parseSearchIntent(query: string): Promise<SearchIntent> {
       },
     });
 
-    const prompt = `You are a visual search intent parser for a creative discovery platform.
-Extract structured information from natural language image searches.
+    const prompt = `You are a visual search intent parser for a creative image discovery platform.
+Parse the user's search query and extract structured information.
 
-Return JSON with:
-- refinedQuery: optimized search terms for image platforms
-- mood: emotional qualities (e.g., "serene", "energetic", "melancholic")
+Return JSON with these fields:
+- refinedQuery: optimized search terms for image platforms (focus on the visual subject)
+- mood: emotional qualities (e.g., "romantic", "serene", "energetic")
 - colors: dominant colors mentioned or implied
-- style: visual styles (e.g., "minimalist", "vintage", "brutalist")
-- subjects: main subjects/objects
-- negativeFilters: things to exclude
+- style: visual styles (e.g., "candid", "cinematic", "editorial")
+- subjects: main subjects/objects in the image
+- negativeFilters: content types to EXCLUDE
 
-Be creative in expanding vague descriptions into searchable terms.
+IMPORTANT for negativeFilters:
+- If searching for real photos of people/places, add: ["illustration", "vector", "clip art", "book cover", "magazine", "poster", "graphic design", "logo", "icon", "screenshot"]
+- If searching for art/design, add: ["stock photo", "amateur"]
+- Always consider what the user does NOT want to see
 
-User query: ${query}`;
+User query: "${query}"`;
 
     const result = await model.generateContent(prompt);
     const content = result.response.text();
@@ -111,32 +114,57 @@ Original: "${query}"${mood?.length ? `\nMood: ${mood.join(", ")}` : ""}`;
 
 // Score image relevance to search intent
 export function scoreImageRelevance(
-  imageDescription: string,
+  imageText: string,
   intent: SearchIntent
 ): number {
-  // Simple keyword matching for speed
-  const allKeywords = [
-    ...intent.mood,
-    ...intent.colors,
-    ...intent.style,
-    ...intent.subjects,
-  ].map((k) => k.toLowerCase());
-
-  const description = imageDescription.toLowerCase();
+  const text = imageText.toLowerCase();
   let score = 0;
 
+  // Positive scoring: keywords from intent
+  const allKeywords = [
+    ...intent.subjects,
+    ...intent.mood,
+    ...intent.style,
+  ].map((k) => k.toLowerCase());
+
   for (const keyword of allKeywords) {
-    if (description.includes(keyword)) {
-      score += 1;
+    if (text.includes(keyword)) {
+      score += 2;
     }
   }
 
-  // Penalty for negative filters
+  // Heavy penalty for negative filters
   for (const filter of intent.negativeFilters) {
-    if (description.includes(filter.toLowerCase())) {
-      score -= 2;
+    if (text.includes(filter.toLowerCase())) {
+      score -= 5;
     }
   }
 
-  return Math.max(0, Math.min(1, score / Math.max(allKeywords.length, 1)));
+  // Penalty for common irrelevant patterns
+  const irrelevantPatterns = [
+    "book",
+    "magazine",
+    "cover",
+    "poster",
+    "illustration",
+    "vector",
+    "clip art",
+    "icon",
+    "logo",
+    "screenshot",
+    "interview",
+    "article",
+    "review",
+    "edition",
+  ];
+
+  for (const pattern of irrelevantPatterns) {
+    if (text.includes(pattern)) {
+      score -= 3;
+    }
+  }
+
+  // Normalize to 0-1 range
+  const maxScore = allKeywords.length * 2;
+  return Math.max(0, Math.min(1, (score + maxScore) / (maxScore * 2 || 1)));
 }

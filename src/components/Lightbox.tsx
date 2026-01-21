@@ -28,13 +28,13 @@ export function Lightbox({ image, isSaved, onToggleSave, onClose }: LightboxProp
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 animate-fade-in">
       <button
         onClick={onClose}
-        className="fixed top-6 right-6 text-white/70 hover:text-brand-pink transition-colors p-2"
+        className="fixed top-4 right-4 sm:top-6 sm:right-6 text-white/70 hover:text-brand-pink transition-colors p-2"
         aria-label="Close"
       >
         <XIcon className="w-8 h-8" />
       </button>
 
-      <div className="relative w-full h-full max-w-[90vw] max-h-[80vh] flex items-center justify-center p-4">
+      <div className="relative w-full h-full max-w-[90vw] max-h-[70vh] sm:max-h-[80vh] flex items-center justify-center p-4">
         <img
           src={image.url}
           alt={image.description || image.title}
@@ -42,33 +42,33 @@ export function Lightbox({ image, isSaved, onToggleSave, onClose }: LightboxProp
         />
       </div>
 
-      <div className="mt-8 flex items-center gap-10 md:gap-16">
+      <div className="mt-4 sm:mt-8 flex items-center gap-6 sm:gap-10 md:gap-16">
         <button
           onClick={onToggleSave}
-          className="flex items-center gap-2 text-white hover:text-brand-pink hover:scale-105 transition-all text-lg font-medium"
+          className="flex items-center gap-2 text-white hover:text-brand-pink hover:scale-105 transition-all text-sm sm:text-lg font-medium"
         >
           <Heart filled={isSaved} className="w-6 h-6" />
-          {isSaved ? "Saved" : "Save"}
+          <span className="hidden sm:inline">{isSaved ? "Saved" : "Save"}</span>
         </button>
 
         <a
           href={image.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 text-white hover:text-brand-pink hover:scale-105 transition-all text-lg font-medium"
+          className="flex items-center gap-2 text-white hover:text-brand-pink hover:scale-105 transition-all text-sm sm:text-lg font-medium"
         >
           <DownloadIcon className="w-6 h-6" />
-          Download
+          <span className="hidden sm:inline">Download</span>
         </a>
 
         <a
           href={image.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 text-white hover:text-brand-pink hover:scale-105 transition-all text-lg font-medium"
+          className="flex items-center gap-2 text-white hover:text-brand-pink hover:scale-105 transition-all text-sm sm:text-lg font-medium"
         >
           <ExternalLinkIcon className="w-6 h-6" />
-          {image.source} →
+          <span className="hidden sm:inline">{image.source} →</span>
         </a>
       </div>
 

@@ -67,8 +67,8 @@ export function SearchBar({
         className={cn(
           "w-full bg-white font-sans transition-all duration-300",
           "border-2 border-brand-stone focus:border-brand-purple outline-none",
-          "rounded-pill px-6",
-          isHero ? "text-2xl h-16 py-4" : "text-lg h-12 py-2",
+          "rounded-pill px-4 sm:px-6",
+          isHero ? "text-base sm:text-xl md:text-2xl h-12 sm:h-14 md:h-16 py-3 sm:py-4" : "text-base sm:text-lg h-10 sm:h-12 py-2",
           "text-brand-stoneDark placeholder-brand-stoneGray shadow-sm focus:shadow-md"
         )}
       />

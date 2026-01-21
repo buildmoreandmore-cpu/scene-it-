@@ -256,6 +256,6 @@ export async function searchAllPlatforms(
   const results = await Promise.all(promises);
   const allImages = results.flat();
 
-  // Shuffle to mix sources
-  return allImages.sort(() => Math.random() - 0.5);
+  // Return unsorted - let the API route handle sorting by relevance
+  return allImages;
 }
