@@ -31,16 +31,15 @@ export async function POST(request: NextRequest) {
       );
     });
 
-    // Score and rank images by relevance
+    // Score and rank images by relevance (only use title/description, not URL)
     const scoredImages = filteredImages
       .map((img) => ({
         ...img,
         relevance: scoreImageRelevance(
-          `${img.title} ${img.description || ""} ${img.url}`,
+          `${img.title} ${img.description || ""}`,
           intent
         ),
       }))
-      .filter((img) => img.relevance >= 0.1) // Remove very low matches
       .sort((a, b) => b.relevance - a.relevance);
 
     return NextResponse.json({

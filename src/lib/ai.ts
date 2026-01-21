@@ -118,7 +118,7 @@ export function scoreImageRelevance(
   intent: SearchIntent
 ): number {
   const text = imageText.toLowerCase();
-  let score = 0;
+  let score = 0.5; // Start with neutral score
 
   // Positive scoring: keywords from intent
   const allKeywords = [
@@ -129,42 +129,16 @@ export function scoreImageRelevance(
 
   for (const keyword of allKeywords) {
     if (text.includes(keyword)) {
-      score += 2;
+      score += 0.1;
     }
   }
 
-  // Heavy penalty for negative filters
+  // Penalty for AI-specified negative filters only
   for (const filter of intent.negativeFilters) {
     if (text.includes(filter.toLowerCase())) {
-      score -= 5;
+      score -= 0.2;
     }
   }
 
-  // Penalty for common irrelevant patterns
-  const irrelevantPatterns = [
-    "book",
-    "magazine",
-    "cover",
-    "poster",
-    "illustration",
-    "vector",
-    "clip art",
-    "icon",
-    "logo",
-    "screenshot",
-    "interview",
-    "article",
-    "review",
-    "edition",
-  ];
-
-  for (const pattern of irrelevantPatterns) {
-    if (text.includes(pattern)) {
-      score -= 3;
-    }
-  }
-
-  // Normalize to 0-1 range
-  const maxScore = allKeywords.length * 2;
-  return Math.max(0, Math.min(1, (score + maxScore) / (maxScore * 2 || 1)));
+  return Math.max(0, Math.min(1, score));
 }
