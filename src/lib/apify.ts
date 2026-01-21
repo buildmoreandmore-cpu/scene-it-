@@ -112,59 +112,41 @@ export async function scrapeArena(query: string, limit = 50): Promise<ScrapedIma
 
 // Cosmos.so scraper using Apify web-scraper (handles JavaScript)
 export async function scrapeCosmos(query: string, limit = 50): Promise<ScrapedImage[]> {
+  console.log("[Cosmos] Starting scrape for:", query);
   try {
-    // Scrape the discover page which has curated content, then scroll to load more
     const run = await apifyClient.actor("apify/web-scraper").call({
-      startUrls: [{ url: `https://www.cosmos.so/discover` }],
+      startUrls: [{ url: "https://www.cosmos.so/discover" }],
       pageFunction: `async function pageFunction(context) {
-        const { page, request } = context;
-
-        // Wait for initial images to load
-        await page.waitForSelector('img', { timeout: 15000 }).catch(() => {});
-
-        // Scroll down multiple times to load more images
-        for (let i = 0; i < 5; i++) {
-          await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+        // Wait for page to load
+        await new Promise(r => setTimeout(r, 5000));
+        // Scroll to load more images
+        for (let i = 0; i < 3; i++) {
+          window.scrollBy(0, window.innerHeight);
           await new Promise(r => setTimeout(r, 1500));
         }
-
-        const results = await page.evaluate(() => {
-          const images = [];
-          document.querySelectorAll('img').forEach((img) => {
-            const src = img.src || img.dataset.src || '';
-            const alt = img.alt || '';
-            const link = img.closest('a')?.href || '';
-            // Filter out small images, avatars, logos, icons
-            if (src && src.startsWith('http') && !src.includes('avatar') && !src.includes('logo') && !src.includes('icon') && (img.naturalWidth > 150 || img.width > 150)) {
-              images.push({ imageUrl: src, title: alt, pageUrl: link || 'https://cosmos.so' });
-            }
-          });
-          return images;
+        // Extract images - we're already in browser context
+        const images = [];
+        document.querySelectorAll('img').forEach((img) => {
+          if (img.src && img.src.startsWith('http') && img.width > 100) {
+            images.push({
+              imageUrl: img.src,
+              title: img.alt || '',
+              pageUrl: img.closest('a')?.href || 'https://cosmos.so'
+            });
+          }
         });
-        return results;
+        return images;
       }`,
       maxRequestsPerCrawl: 1,
-      maxConcurrency: 1,
     }, { timeout: 90000 });
 
+    console.log("[Cosmos] Run completed:", run.status);
     const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
-    const cosmosResults = (items.flat() as CosmosResult[]).filter(Boolean);
+    const allResults = (items.flat() as CosmosResult[]).filter(item => !item["#error"]);
+    console.log("[Cosmos] Got", allResults.length, "images");
 
-    // Filter results by query keywords if they have titles
-    const queryTerms = query.toLowerCase().split(/\s+/);
-    const filteredResults = cosmosResults.filter((item) => {
-      if (!item.imageUrl) return false;
-      // If no title, include it anyway (we'll show discover content)
-      if (!item.title) return true;
-      const title = item.title.toLowerCase();
-      // Check if any query term appears in the title
-      return queryTerms.some(term => title.includes(term));
-    });
-
-    // If we have filtered results, use those; otherwise return all discover results
-    const finalResults = filteredResults.length > 5 ? filteredResults : cosmosResults.filter(item => item.imageUrl);
-
-    return finalResults
+    return allResults
+      .filter((item) => item.imageUrl && !item.imageUrl.includes('avatar') && !item.imageUrl.includes('logo'))
       .slice(0, limit)
       .map((item, index) => ({
         id: `cosmos-${Date.now()}-${index}`,
@@ -177,58 +159,16 @@ export async function scrapeCosmos(query: string, limit = 50): Promise<ScrapedIm
         author: item.author,
       }));
   } catch (error) {
-    console.error("Cosmos scraping error:", error);
+    console.error("[Cosmos] Scraping error:", error);
     return [];
   }
 }
 
-// Savee.it scraper using Apify web-scraper (handles JavaScript)
-export async function scrapeSavee(query: string, limit = 50): Promise<ScrapedImage[]> {
-  try {
-    const run = await apifyClient.actor("apify/web-scraper").call({
-      startUrls: [{ url: `https://savee.it/search/?q=${encodeURIComponent(query)}` }],
-      pageFunction: `async function pageFunction(context) {
-        const { page, request } = context;
-        await page.waitForSelector('img', { timeout: 10000 }).catch(() => {});
-        await new Promise(r => setTimeout(r, 2000));
-        const results = await page.evaluate(() => {
-          const images = [];
-          document.querySelectorAll('img').forEach((img) => {
-            const src = img.src || img.dataset.src || '';
-            const alt = img.alt || '';
-            const link = img.closest('a')?.href || '';
-            if (src && src.startsWith('http') && !src.includes('avatar') && !src.includes('logo') && img.width > 100) {
-              images.push({ imageUrl: src, title: alt, pageUrl: link.startsWith('http') ? link : 'https://savee.it' + link });
-            }
-          });
-          return images;
-        });
-        return results;
-      }`,
-      maxRequestsPerCrawl: 1,
-      maxConcurrency: 1,
-    }, { timeout: 60000 });
-
-    const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
-    const saveeResults = (items.flat() as SaveeResult[]).filter(Boolean);
-
-    return saveeResults
-      .filter((item) => item.imageUrl)
-      .slice(0, limit)
-      .map((item, index) => ({
-        id: `savee-${Date.now()}-${index}`,
-        url: item.imageUrl || "",
-        thumbnailUrl: item.imageUrl || "",
-        title: item.title || "",
-        description: item.description,
-        source: "savee" as const,
-        sourceUrl: item.pageUrl || "https://savee.it",
-        author: item.author,
-      }));
-  } catch (error) {
-    console.error("Savee scraping error:", error);
-    return [];
-  }
+// Savee.it scraper - DISABLED (requires login for search)
+export async function scrapeSavee(_query: string, _limit = 50): Promise<ScrapedImage[]> {
+  // Savee.it requires login to search - disabled for now
+  console.log("[Savee] Disabled - requires login");
+  return [];
 }
 
 // Multi-platform search
@@ -237,23 +177,37 @@ export async function searchAllPlatforms(
   platforms: ("pinterest" | "arena" | "cosmos" | "savee")[] = ["pinterest", "arena", "cosmos", "savee"],
   limitPerPlatform = 30
 ): Promise<ScrapedImage[]> {
+  console.log("[Search] Starting search for:", query, "on platforms:", platforms);
+
   const promises: Promise<ScrapedImage[]>[] = [];
+  const platformNames: string[] = [];
 
   if (platforms.includes("pinterest")) {
     promises.push(scrapePinterest(query, limitPerPlatform));
+    platformNames.push("pinterest");
   }
   if (platforms.includes("arena")) {
     promises.push(scrapeArena(query, limitPerPlatform));
+    platformNames.push("arena");
   }
   if (platforms.includes("cosmos")) {
     promises.push(scrapeCosmos(query, limitPerPlatform));
+    platformNames.push("cosmos");
   }
   if (platforms.includes("savee")) {
     promises.push(scrapeSavee(query, limitPerPlatform));
+    platformNames.push("savee");
   }
 
   const results = await Promise.all(promises);
+
+  // Log results per platform
+  results.forEach((r, i) => {
+    console.log(`[Search] ${platformNames[i]}: ${r.length} images`);
+  });
+
   const allImages = results.flat();
+  console.log("[Search] Total images:", allImages.length);
 
   // Return unsorted - let the API route handle sorting by relevance
   return allImages;

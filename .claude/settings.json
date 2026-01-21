@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "image-scraper": {
+      "command": "node",
+      "args": ["/Users/martinfrancis/scene-it/mcp-image-scraper/index.js"]
+    }
+  }
+}
