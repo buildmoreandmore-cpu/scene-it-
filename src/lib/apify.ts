@@ -110,18 +110,102 @@ export async function scrapeArena(query: string, limit = 50): Promise<ScrapedIma
   }
 }
 
-// Cosmos.so scraper - disabled due to Apify cheerio-scraper issues
-export async function scrapeCosmos(_query: string, _limit = 50): Promise<ScrapedImage[]> {
-  // TODO: Fix cheerio-scraper pageFunction syntax or find alternative
-  console.log("Cosmos scraper temporarily disabled");
-  return [];
+// Cosmos.so scraper using Apify web-scraper (handles JavaScript)
+export async function scrapeCosmos(query: string, limit = 50): Promise<ScrapedImage[]> {
+  try {
+    const run = await apifyClient.actor("apify/web-scraper").call({
+      startUrls: [{ url: `https://cosmos.so/search?q=${encodeURIComponent(query)}` }],
+      pageFunction: `async function pageFunction(context) {
+        const { page, request } = context;
+        await page.waitForSelector('img', { timeout: 10000 }).catch(() => {});
+        await new Promise(r => setTimeout(r, 2000));
+        const results = await page.evaluate(() => {
+          const images = [];
+          document.querySelectorAll('img').forEach((img) => {
+            const src = img.src || img.dataset.src || '';
+            const alt = img.alt || '';
+            const link = img.closest('a')?.href || '';
+            if (src && src.startsWith('http') && !src.includes('avatar') && !src.includes('logo') && img.width > 100) {
+              images.push({ imageUrl: src, title: alt, pageUrl: link || 'https://cosmos.so' });
+            }
+          });
+          return images;
+        });
+        return results;
+      }`,
+      maxRequestsPerCrawl: 1,
+      maxConcurrency: 1,
+    }, { timeout: 60000 });
+
+    const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
+    const cosmosResults = (items.flat() as CosmosResult[]).filter(Boolean);
+
+    return cosmosResults
+      .filter((item) => item.imageUrl)
+      .slice(0, limit)
+      .map((item, index) => ({
+        id: `cosmos-${Date.now()}-${index}`,
+        url: item.imageUrl || "",
+        thumbnailUrl: item.imageUrl || "",
+        title: item.title || "",
+        description: item.description,
+        source: "cosmos" as const,
+        sourceUrl: item.pageUrl || "https://cosmos.so",
+        author: item.author,
+      }));
+  } catch (error) {
+    console.error("Cosmos scraping error:", error);
+    return [];
+  }
 }
 
-// Savee.it scraper - disabled due to Apify cheerio-scraper issues
-export async function scrapeSavee(_query: string, _limit = 50): Promise<ScrapedImage[]> {
-  // TODO: Fix cheerio-scraper pageFunction syntax or find alternative
-  console.log("Savee scraper temporarily disabled");
-  return [];
+// Savee.it scraper using Apify web-scraper (handles JavaScript)
+export async function scrapeSavee(query: string, limit = 50): Promise<ScrapedImage[]> {
+  try {
+    const run = await apifyClient.actor("apify/web-scraper").call({
+      startUrls: [{ url: `https://savee.it/search/?q=${encodeURIComponent(query)}` }],
+      pageFunction: `async function pageFunction(context) {
+        const { page, request } = context;
+        await page.waitForSelector('img', { timeout: 10000 }).catch(() => {});
+        await new Promise(r => setTimeout(r, 2000));
+        const results = await page.evaluate(() => {
+          const images = [];
+          document.querySelectorAll('img').forEach((img) => {
+            const src = img.src || img.dataset.src || '';
+            const alt = img.alt || '';
+            const link = img.closest('a')?.href || '';
+            if (src && src.startsWith('http') && !src.includes('avatar') && !src.includes('logo') && img.width > 100) {
+              images.push({ imageUrl: src, title: alt, pageUrl: link.startsWith('http') ? link : 'https://savee.it' + link });
+            }
+          });
+          return images;
+        });
+        return results;
+      }`,
+      maxRequestsPerCrawl: 1,
+      maxConcurrency: 1,
+    }, { timeout: 60000 });
+
+    const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
+    const saveeResults = (items.flat() as SaveeResult[]).filter(Boolean);
+
+    return saveeResults
+      .filter((item) => item.imageUrl)
+      .slice(0, limit)
+      .map((item, index) => ({
+        id: `savee-${Date.now()}-${index}`,
+        url: item.imageUrl || "",
+        thumbnailUrl: item.imageUrl || "",
+        title: item.title || "",
+        description: item.description,
+        source: "savee" as const,
+        sourceUrl: item.pageUrl || "https://savee.it",
+        author: item.author,
+      }));
+  } catch (error) {
+    console.error("Savee scraping error:", error);
+    return [];
+  }
 }
 
 // Multi-platform search
