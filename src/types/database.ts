@@ -107,7 +107,7 @@ export interface ScrapedImage {
   thumbnailUrl: string;
   title: string;
   description?: string;
-  source: "pinterest" | "arena" | "cosmos" | "savee";
+  source: "pinterest" | "arena" | "cosmos" | "savee" | "shotdeck";
   sourceUrl: string;
   width?: number;
   height?: number;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseSearchIntent, generateSuggestions, scoreImageRelevance, SearchIntent } from "@/lib/ai";
 import { searchAllPlatforms } from "@/lib/apify";
+import { searchAuthenticatedPlatforms } from "@/lib/authenticated-scrapers";
 import { UserFilters } from "@/types/filters";
 
 export async function POST(request: NextRequest) {
@@ -23,16 +24,25 @@ export async function POST(request: NextRequest) {
       negativeFilters: [...new Set([...(userFilters?.negativeFilters || []), ...aiIntent.negativeFilters])],
     };
 
-    // Search platforms in parallel
-    // Note: Pinterest disabled (requires paid Apify actor). Arena, Cosmos, Savee active.
-    const [images, suggestions] = await Promise.all([
+    // Search all platforms in parallel:
+    // - Apify: Arena, Cosmos (public APIs/scraping)
+    // - Authenticated: Pinterest, Savee, Shotdeck (requires login)
+    const [apifyImages, authImages, suggestions] = await Promise.all([
       searchAllPlatforms(
         intent.refinedQuery || query,
-        platforms || ["arena", "cosmos", "savee"],
-        30
+        platforms || ["arena", "cosmos"],
+        20
+      ),
+      searchAuthenticatedPlatforms(
+        intent.refinedQuery || query,
+        ["pinterest", "savee", "shotdeck"],
+        10
       ),
       generateSuggestions(query, intent.mood),
     ]);
+
+    // Combine all images
+    const images = [...apifyImages, ...authImages];
 
     // Filter out images that match negative filters
     const filteredImages = images.filter((img) => {

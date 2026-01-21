@@ -142,7 +142,7 @@ export async function scrapeCosmos(query: string, limit = 50): Promise<ScrapedIm
 
     console.log("[Cosmos] Run completed:", run.status);
     const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
-    const allResults = (items.flat() as CosmosResult[]).filter(item => !item["#error"]);
+    const allResults = (items.flat() as (CosmosResult & { "#error"?: boolean })[]).filter(item => !item["#error"]);
     console.log("[Cosmos] Got", allResults.length, "images");
 
     return allResults
