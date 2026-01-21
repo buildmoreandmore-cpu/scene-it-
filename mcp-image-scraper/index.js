@@ -31,26 +31,52 @@ async function getBrowser() {
   return browser;
 }
 
-// Savee scraper
+// Savee scraper - uses Google OAuth
 async function searchSavee(query, limit = 30) {
-  if (!SAVEE_EMAIL || !SAVEE_PASSWORD) {
-    return { error: "Savee credentials not configured" };
+  if (!SAVEE_EMAIL) {
+    return { error: "Savee email not configured" };
   }
 
   const browser = await getBrowser();
   const page = await browser.newPage();
 
-  try {
-    // Login
-    await page.goto("https://savee.it/login/", { waitUntil: "networkidle2" });
-    await page.type('input[name="email"]', SAVEE_EMAIL);
-    await page.type('input[name="password"]', SAVEE_PASSWORD);
-    await page.click('button[type="submit"]');
-    await page.waitForNavigation({ waitUntil: "networkidle2" });
+  // Set a realistic user agent
+  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-    // Search
-    await page.goto(`https://savee.it/search/?q=${encodeURIComponent(query)}`, {
+  try {
+    // Go to login page
+    await page.goto("https://savee.com/login/", { waitUntil: "networkidle2", timeout: 30000 });
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Look for Google OAuth button and click it
+    const googleButton = await page.$('button[data-provider="google"], a[href*="google"], button:has-text("Google"), [class*="google"]');
+    if (googleButton) {
+      await googleButton.click();
+      await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 30000 }).catch(() => {});
+
+      // Handle Google login if redirected
+      const currentUrl = page.url();
+      if (currentUrl.includes("accounts.google.com")) {
+        // Enter email
+        await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+        await page.type('input[type="email"]', SAVEE_EMAIL);
+        await page.click('#identifierNext, button[type="submit"]');
+        await new Promise(r => setTimeout(r, 3000));
+
+        // Enter password if needed (use Pinterest password as it's same account)
+        const passwordInput = await page.$('input[type="password"]');
+        if (passwordInput && process.env.PINTEREST_PASSWORD) {
+          await page.type('input[type="password"]', process.env.PINTEREST_PASSWORD);
+          await page.click('#passwordNext, button[type="submit"]');
+          await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 30000 }).catch(() => {});
+        }
+      }
+    }
+
+    // Now search
+    await page.goto(`https://savee.com/search/?q=${encodeURIComponent(query)}`, {
       waitUntil: "networkidle2",
+      timeout: 30000,
     });
 
     // Wait for images and scroll
@@ -64,11 +90,11 @@ async function searchSavee(query, limit = 30) {
     const images = await page.evaluate(() => {
       const results = [];
       document.querySelectorAll("img").forEach((img) => {
-        if (img.src && img.src.startsWith("http") && img.width > 100) {
+        if (img.src && img.src.startsWith("http") && img.width > 100 && !img.src.includes("avatar") && !img.src.includes("logo")) {
           results.push({
             url: img.src,
             title: img.alt || "",
-            sourceUrl: img.closest("a")?.href || "https://savee.it",
+            sourceUrl: img.closest("a")?.href || "https://savee.com",
           });
         }
       });
