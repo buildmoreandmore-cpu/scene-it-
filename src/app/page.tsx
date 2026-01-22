@@ -201,7 +201,9 @@ function LandingPage({ onSearch }: { onSearch: (val: string) => void }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-brand-white animate-fade-in">
       <div className="text-center mb-6 sm:mb-10 select-none">
-        <img src="/logo.png" alt="Scene.it" className="h-12 sm:h-16 md:h-20 w-auto mx-auto mb-4" />
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-4 text-brand-charcoal">
+          Scene.it
+        </h1>
         <div className="text-brand-stoneGray text-lg font-medium tracking-tight opacity-70">
           <p>See what you imagine.</p>
           <p>Find what you feel.</p>
