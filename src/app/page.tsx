@@ -204,29 +204,36 @@ function LandingPage({ onSearch }: { onSearch: (val: string) => void }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-bg-primary animate-fade-in relative">
       {/* Theme Toggle in top right */}
-      <div className="absolute top-6 right-6">
+      <div className="absolute top-6 right-6 z-50">
         <ThemeToggle />
       </div>
 
-      <div className="text-center mb-6 sm:mb-10 select-none">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-4 text-text-primary">
-          Scene.it
+      <div className="text-center mb-8 sm:mb-12 select-none">
+        {/* Bold blocky title */}
+        <h1 className="text-5xl sm:text-6xl md:text-8xl font-black tracking-tight mb-4 text-text-primary font-mono">
+          SCENE.IT
         </h1>
-        <div className="text-text-muted text-lg font-medium tracking-tight">
-          <p>See what you imagine.</p>
-          <p>Find what you feel.</p>
-        </div>
+        {/* Uppercase subtitle with letter spacing */}
+        <p className="text-xs sm:text-sm tracking-[0.3em] uppercase text-text-muted font-medium">
+          Visual Research for Creatives
+        </p>
       </div>
+
+      {/* Description text */}
+      <p className="text-text-secondary text-center max-w-md mb-8 text-sm sm:text-base leading-relaxed">
+        Find cinematic references, mood boards, and visual inspiration.
+        Search across Are.na, Pinterest, and more.
+      </p>
 
       <SearchBar isHero value={query} onChange={setQuery} onSearch={onSearch} />
 
-      <div className="mt-6 sm:mt-8 flex flex-wrap justify-center items-center gap-3 text-sm text-text-muted">
-        <span className="opacity-60">Try:</span>
+      <div className="mt-8 sm:mt-10 flex flex-wrap justify-center items-center gap-3 text-sm text-text-muted">
+        <span className="text-xs uppercase tracking-wider opacity-60">Try:</span>
         {["warm minimalism", "vintage film", "brutalist mood"].map((tag) => (
           <button
             key={tag}
             onClick={() => onSearch(tag)}
-            className="px-3 py-1.5 sm:px-5 sm:py-2 rounded-pill bg-bg-tertiary text-text-primary hover:bg-brand-purple hover:text-white transition-all duration-300 font-medium active:scale-95"
+            className="px-4 py-2 rounded-pill bg-bg-tertiary text-text-primary hover:bg-brand-purple hover:text-white transition-all duration-300 text-sm font-medium active:scale-95"
           >
             {tag}
           </button>
