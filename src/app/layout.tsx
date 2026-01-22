@@ -27,11 +27,16 @@ export const metadata: Metadata = {
     "visual inspiration",
   ],
   authors: [{ name: "Scene.it" }],
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     title: "Scene.it - Visual Research for Creatives",
     description: "Reference search for art directors, creative directors, and filmmakers.",
     type: "website",
     url: "https://sceneit.dev",
+    images: ["/logo.png"],
   },
 };
 

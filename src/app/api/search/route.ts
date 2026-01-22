@@ -27,19 +27,29 @@ export async function POST(request: NextRequest) {
     // Search all platforms in parallel:
     // - Apify: Arena, Cosmos (public APIs/scraping)
     // - Authenticated: Pinterest, Savee, Shotdeck (requires login)
+    console.log("[Search API] Starting search for:", intent.refinedQuery || query);
+
     const [apifyImages, authImages, suggestions] = await Promise.all([
       searchAllPlatforms(
         intent.refinedQuery || query,
         platforms || ["arena", "cosmos"],
-        20
-      ),
+        30
+      ).catch(err => {
+        console.error("[Search API] Apify error:", err);
+        return [];
+      }),
       searchAuthenticatedPlatforms(
         intent.refinedQuery || query,
-        ["pinterest", "savee", "shotdeck"],
-        10
-      ),
+        ["pinterest", "shotdeck"],
+        15
+      ).catch(err => {
+        console.error("[Search API] Auth scrapers error:", err);
+        return [];
+      }),
       generateSuggestions(query, intent.mood),
     ]);
+
+    console.log("[Search API] Results - Apify:", apifyImages.length, "Auth:", authImages.length);
 
     // Combine all images
     const images = [...apifyImages, ...authImages];
@@ -102,8 +112,10 @@ export async function POST(request: NextRequest) {
           intent
         ),
       }))
-      .filter((img) => img.relevance > 0.3) // Filter out low relevance images
+      .filter((img) => img.relevance > 0.2) // Lower threshold to show more results
       .sort((a, b) => b.relevance - a.relevance);
+
+    console.log("[Search API] After filtering:", scoredImages.length, "images");
 
     return NextResponse.json({
       images: scoredImages,
