@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Logo, SearchBar, ImageCard, Lightbox, Heart, RefineView } from "@/components";
+import { Logo, SearchBar, ImageCard, LoadingGrid, Lightbox, Heart, RefineView } from "@/components";
 import { ScrapedImage, UserFilters } from "@/types";
 
 type View = "landing" | "refine" | "search" | "saved";
@@ -163,6 +163,7 @@ export default function Home() {
         {view === "search" && (
           <ResultsPage
             results={results}
+            isLoading={isLoading || !imagesPreloaded}
             savedImages={savedImages}
             onToggleSave={toggleSave}
             onSelect={setSelectedImage}
@@ -230,15 +231,24 @@ function LandingPage({ onSearch }: { onSearch: (val: string) => void }) {
 // Results Page Component
 function ResultsPage({
   results,
+  isLoading,
   savedImages,
   onToggleSave,
   onSelect,
 }: {
   results: ScrapedImage[];
+  isLoading: boolean;
   savedImages: ScrapedImage[];
   onToggleSave: (img: ScrapedImage) => void;
   onSelect: (img: ScrapedImage) => void;
 }) {
+  if (isLoading)
+    return (
+      <div className="py-12 px-4">
+        <LoadingGrid />
+      </div>
+    );
+
   if (results.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-40 text-brand-stoneGray animate-slide-up">
