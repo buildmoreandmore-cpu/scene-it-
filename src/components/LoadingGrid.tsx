@@ -16,10 +16,10 @@ export function LoadingGrid() {
   return (
     <div>
       <div className="text-center mb-6">
-        <p className="text-brand-stoneGray text-lg">
+        <p className="text-text-muted text-lg">
           Searching... {elapsed}s
         </p>
-        <div className="w-48 h-1 bg-brand-stone rounded-full mx-auto mt-2 overflow-hidden">
+        <div className="w-48 h-1 bg-bg-tertiary rounded-full mx-auto mt-2 overflow-hidden">
           <div
             className="h-full bg-brand-purple rounded-full"
             style={{

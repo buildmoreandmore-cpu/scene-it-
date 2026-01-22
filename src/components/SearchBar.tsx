@@ -65,11 +65,11 @@ export function SearchBar({
         placeholder={placeholders[placeholderIndex]}
         autoFocus={isHero}
         className={cn(
-          "w-full bg-white font-sans transition-all duration-300",
-          "border-2 border-brand-stone focus:border-brand-purple outline-none",
+          "w-full bg-bg-secondary font-sans transition-all duration-300",
+          "border-2 border-border focus:border-brand-purple outline-none",
           "rounded-pill px-4 sm:px-6",
           isHero ? "text-base sm:text-xl md:text-2xl h-12 sm:h-14 md:h-16 py-3 sm:py-4" : "text-base sm:text-lg h-10 sm:h-12 py-2",
-          "text-brand-stoneDark placeholder-brand-stoneGray shadow-sm focus:shadow-md"
+          "text-text-primary placeholder-text-muted shadow-sm focus:shadow-md"
         )}
       />
 
@@ -80,7 +80,7 @@ export function SearchBar({
         {!isLoading && value.trim() && (
           <button
             type="submit"
-            className="text-brand-stoneGray hover:text-brand-purple transition-colors"
+            className="text-text-muted hover:text-brand-purple transition-colors"
           >
             <ArrowRightIcon className="w-5 h-5" />
           </button>

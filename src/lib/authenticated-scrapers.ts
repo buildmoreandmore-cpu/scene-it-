@@ -16,11 +16,49 @@ async function getBrowser(): Promise<Browser> {
     return browser;
   }
 
-  // For Vercel serverless, use @sparticuz/chromium
-  const executablePath = await chromium.executablePath();
+  // Check if running locally (development) or on Vercel (production)
+  const isLocal = process.env.NODE_ENV === "development" || !process.env.VERCEL;
+
+  let executablePath: string;
+  let args: string[];
+
+  if (isLocal) {
+    // For local development, use local Chrome installation
+    const localChromePaths = [
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "/usr/bin/google-chrome",
+      "/usr/bin/chromium-browser",
+      "/usr/bin/chromium",
+    ];
+
+    const foundPath = localChromePaths.find((p) => {
+      try {
+        require("fs").accessSync(p);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+
+    if (!foundPath) {
+      throw new Error("No local Chrome installation found");
+    }
+
+    executablePath = foundPath;
+    args = [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+    ];
+  } else {
+    // For Vercel serverless, use @sparticuz/chromium
+    executablePath = await chromium.executablePath();
+    args = chromium.args;
+  }
 
   browser = await puppeteer.launch({
-    args: chromium.args,
+    args,
     defaultViewport: { width: 1280, height: 720 },
     executablePath,
     headless: true,

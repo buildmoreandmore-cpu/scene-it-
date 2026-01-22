@@ -8,4 +8,5 @@ export { RefineView } from "./RefineView";
 export { EmptyState } from "./EmptyState";
 export { LoadingGrid, SkeletonGrid } from "./LoadingGrid";
 export { Lightbox } from "./Lightbox";
+export { ThemeToggle } from "./ThemeToggle";
 export { Heart, XIcon, DownloadIcon, ExternalLinkIcon, ArrowRightIcon } from "./Icons";

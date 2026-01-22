@@ -110,39 +110,60 @@ export async function scrapeArena(query: string, limit = 50): Promise<ScrapedIma
   }
 }
 
-// Cosmos.so scraper using Apify web-scraper (handles JavaScript)
+// Cosmos.so scraper using Apify puppeteer-scraper (better anti-bot handling)
 export async function scrapeCosmos(query: string, limit = 50): Promise<ScrapedImage[]> {
   console.log("[Cosmos] Starting scrape for:", query);
   try {
     // Search URL with query parameter
     const searchUrl = `https://www.cosmos.so/search?q=${encodeURIComponent(query)}`;
 
-    const run = await apifyClient.actor("apify/web-scraper").call({
+    const run = await apifyClient.actor("apify/puppeteer-scraper").call({
       startUrls: [{ url: searchUrl }],
+      useChrome: true,
+      headless: true,
+      preNavigationHooks: `[
+        async ({ page }) => {
+          // Set realistic viewport and user agent
+          await page.setViewport({ width: 1920, height: 1080 });
+          await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        }
+      ]`,
       pageFunction: `async function pageFunction(context) {
-        // Wait for page to load
-        await new Promise(r => setTimeout(r, 6000));
+        const { page, log } = context;
+
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Wait for page to fully load
+        await delay(5000);
+
         // Scroll to load more images
         for (let i = 0; i < 5; i++) {
-          window.scrollBy(0, window.innerHeight);
-          await new Promise(r => setTimeout(r, 2000));
+          await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+          await delay(1500);
         }
-        // Extract images - we're already in browser context
-        const images = [];
-        document.querySelectorAll('img').forEach((img) => {
-          const src = img.src || img.dataset?.src || '';
-          if (src && src.startsWith('http') && img.width > 100 && !src.includes('avatar') && !src.includes('profile') && !src.includes('logo')) {
-            images.push({
-              imageUrl: src,
-              title: img.alt || '',
-              pageUrl: img.closest('a')?.href || 'https://cosmos.so'
-            });
-          }
+
+        // Extract images
+        const images = await page.evaluate(() => {
+          const results = [];
+          document.querySelectorAll('img').forEach((img) => {
+            const src = img.src || img.dataset?.src || '';
+            if (src && src.startsWith('http') && img.width > 100 &&
+                !src.includes('avatar') && !src.includes('profile') && !src.includes('logo')) {
+              results.push({
+                imageUrl: src,
+                title: img.alt || '',
+                pageUrl: img.closest('a')?.href || 'https://cosmos.so'
+              });
+            }
+          });
+          return results;
         });
+
         return images;
       }`,
       maxRequestsPerCrawl: 1,
-    }, { timeout: 120000 });
+      maxConcurrency: 1,
+    }, { timeout: 90000 });
 
     console.log("[Cosmos] Run completed:", run.status);
     const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();

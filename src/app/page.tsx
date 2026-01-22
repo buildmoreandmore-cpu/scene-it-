@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Logo, SearchBar, ImageCard, LoadingGrid, Lightbox, Heart, RefineView } from "@/components";
+import { Logo, SearchBar, ImageCard, LoadingGrid, Lightbox, Heart, RefineView, ThemeToggle } from "@/components";
 import { ScrapedImage, UserFilters } from "@/types";
 
 type View = "landing" | "refine" | "search" | "saved";
@@ -103,10 +103,10 @@ export default function Home() {
   const isRefine = view === "refine";
 
   return (
-    <div className="min-h-screen bg-brand-white text-brand-stoneDark">
+    <div className="min-h-screen bg-bg-primary text-text-primary transition-colors duration-300">
       {/* Header - shown on search and saved views (not landing or refine) */}
       {!isLanding && !isRefine && (
-        <header className="sticky top-0 z-40 h-16 sm:h-20 bg-brand-white/80 backdrop-blur-md border-b border-brand-stone flex items-center px-3 sm:px-6 md:px-10 justify-between gap-2 sm:gap-6 md:gap-8 transition-all duration-300">
+        <header className="sticky top-0 z-40 h-16 sm:h-20 bg-header-bg backdrop-blur-md border-b border-border flex items-center px-3 sm:px-6 md:px-10 justify-between gap-2 sm:gap-6 md:gap-8 transition-all duration-300">
           <button
             onClick={() => setView("landing")}
             className="hover:opacity-70 transition-opacity flex-shrink-0"
@@ -123,24 +123,27 @@ export default function Home() {
             />
           </div>
 
-          <button
-            onClick={() => setView("saved")}
-            className="relative p-2 group flex items-center"
-          >
-            <Heart
-              className={`w-6 h-6 sm:w-8 sm:h-8 transition-all duration-300 ${
-                savedImages.length > 0
-                  ? "text-brand-pink scale-110"
-                  : "text-brand-stoneGray group-hover:text-brand-pink"
-              }`}
-              filled={savedImages.length > 0}
-            />
-            {savedImages.length > 0 && (
-              <span className="absolute -top-0 -right-0 bg-brand-pink text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full animate-zoom-in shadow-lg">
-                {savedImages.length}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => setView("saved")}
+              className="relative p-2 group flex items-center"
+            >
+              <Heart
+                className={`w-6 h-6 sm:w-8 sm:h-8 transition-all duration-300 ${
+                  savedImages.length > 0
+                    ? "text-brand-pink scale-110"
+                    : "text-text-muted group-hover:text-brand-pink"
+                }`}
+                filled={savedImages.length > 0}
+              />
+              {savedImages.length > 0 && (
+                <span className="absolute -top-0 -right-0 bg-brand-pink text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full animate-zoom-in shadow-lg">
+                  {savedImages.length}
+                </span>
+              )}
+            </button>
+          </div>
         </header>
       )}
 
@@ -199,12 +202,17 @@ function LandingPage({ onSearch }: { onSearch: (val: string) => void }) {
   const [query, setQuery] = useState("");
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-brand-white animate-fade-in">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-bg-primary animate-fade-in relative">
+      {/* Theme Toggle in top right */}
+      <div className="absolute top-6 right-6">
+        <ThemeToggle />
+      </div>
+
       <div className="text-center mb-6 sm:mb-10 select-none">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-4 text-brand-charcoal">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-4 text-text-primary">
           Scene.it
         </h1>
-        <div className="text-brand-stoneGray text-lg font-medium tracking-tight opacity-70">
+        <div className="text-text-muted text-lg font-medium tracking-tight">
           <p>See what you imagine.</p>
           <p>Find what you feel.</p>
         </div>
@@ -212,13 +220,13 @@ function LandingPage({ onSearch }: { onSearch: (val: string) => void }) {
 
       <SearchBar isHero value={query} onChange={setQuery} onSearch={onSearch} />
 
-      <div className="mt-6 sm:mt-8 flex flex-wrap justify-center items-center gap-3 text-sm text-brand-stoneGray">
+      <div className="mt-6 sm:mt-8 flex flex-wrap justify-center items-center gap-3 text-sm text-text-muted">
         <span className="opacity-60">Try:</span>
         {["warm minimalism", "vintage film", "brutalist mood"].map((tag) => (
           <button
             key={tag}
             onClick={() => onSearch(tag)}
-            className="px-3 py-1.5 sm:px-5 sm:py-2 rounded-pill bg-brand-stone text-brand-stoneDark hover:bg-brand-purple hover:text-white transition-all duration-300 font-medium active:scale-95"
+            className="px-3 py-1.5 sm:px-5 sm:py-2 rounded-pill bg-bg-tertiary text-text-primary hover:bg-brand-purple hover:text-white transition-all duration-300 font-medium active:scale-95"
           >
             {tag}
           </button>
@@ -251,7 +259,7 @@ function ResultsPage({
 
   if (results.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-40 text-brand-stoneGray animate-slide-up">
+      <div className="flex flex-col items-center justify-center py-40 text-text-muted animate-slide-up">
         <p className="text-2xl font-medium tracking-tight">No results found.</p>
         <p className="text-base mt-2 opacity-60">Try exploring different visual moods.</p>
       </div>
@@ -260,7 +268,7 @@ function ResultsPage({
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6 sm:py-10 animate-fade-in">
-      <p className="text-sm text-brand-stoneGray mb-4">
+      <p className="text-sm text-text-muted mb-4">
         Showing {results.length} images
       </p>
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6">
@@ -298,21 +306,21 @@ function SavedPage({
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-12 animate-fade-in">
       <div className="text-center mb-12">
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-brand-charcoal">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
           Collected Moments
         </h2>
-        <p className="text-brand-stoneGray mt-2 opacity-60 font-medium">
+        <p className="text-text-muted mt-2 font-medium">
           {savedImages.length} images saved
         </p>
       </div>
 
       {savedImages.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 text-brand-stoneGray">
+        <div className="flex flex-col items-center justify-center py-32 text-text-muted">
           <p className="text-xl font-medium">Nothing saved yet.</p>
           <p className="text-base mt-2 opacity-60">Begin your discovery to fill this space.</p>
           <button
             onClick={onGoHome}
-            className="mt-8 px-6 py-2 bg-brand-charcoal text-white rounded-pill hover:bg-brand-purple transition-all"
+            className="mt-8 px-6 py-2 bg-text-primary text-bg-primary rounded-pill hover:bg-brand-purple hover:text-white transition-all"
           >
             Start Searching
           </button>
