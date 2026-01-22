@@ -121,20 +121,39 @@ export function scoreImageRelevance(
   imageText: string,
   intent: SearchIntent
 ): number {
-  const text = imageText.toLowerCase();
+  const text = imageText.toLowerCase().trim();
+
+  // If image has no/minimal metadata, give it a neutral pass score
+  // (trust that the platform's search returned relevant results)
+  if (text.length < 5) {
+    return 0.5;
+  }
+
   let score = 0.4; // Start slightly below neutral
+  let hasPositiveMatch = false;
+
+  // Check refined query words
+  const queryWords = intent.refinedQuery.toLowerCase().split(/\s+/);
+  for (const word of queryWords) {
+    if (word.length > 2 && text.includes(word)) {
+      score += 0.15;
+      hasPositiveMatch = true;
+    }
+  }
 
   // Primary subjects are most important - higher weight
   for (const subject of intent.subjects) {
     const subjectLower = subject.toLowerCase();
     if (text.includes(subjectLower)) {
       score += 0.2;
+      hasPositiveMatch = true;
     }
     // Partial match for compound words
     const words = subjectLower.split(/\s+/);
     for (const word of words) {
       if (word.length > 3 && text.includes(word)) {
-        score += 0.05;
+        score += 0.08;
+        hasPositiveMatch = true;
       }
     }
   }
@@ -143,6 +162,7 @@ export function scoreImageRelevance(
   for (const mood of intent.mood) {
     if (text.includes(mood.toLowerCase())) {
       score += 0.1;
+      hasPositiveMatch = true;
     }
   }
 
@@ -150,6 +170,7 @@ export function scoreImageRelevance(
   for (const style of intent.style) {
     if (text.includes(style.toLowerCase())) {
       score += 0.1;
+      hasPositiveMatch = true;
     }
   }
 
@@ -157,18 +178,19 @@ export function scoreImageRelevance(
   for (const color of intent.colors) {
     if (text.includes(color.toLowerCase())) {
       score += 0.05;
+      hasPositiveMatch = true;
     }
   }
 
   // Penalty for negative filters
   for (const filter of intent.negativeFilters) {
     if (text.includes(filter.toLowerCase())) {
-      score -= 0.3;
+      score -= 0.25;
     }
   }
 
   // Penalty for common irrelevant terms
-  const penaltyTerms = ["article", "blog", "news", "meme", "funny", "lol", "wtf", "omg"];
+  const penaltyTerms = ["article", "blog", "news", "meme", "funny", "lol", "wtf", "omg", "click", "subscribe"];
   for (const term of penaltyTerms) {
     if (text.includes(term)) {
       score -= 0.15;
@@ -176,11 +198,17 @@ export function scoreImageRelevance(
   }
 
   // Bonus for photography-related terms
-  const photoTerms = ["photo", "photograph", "shot", "portrait", "candid", "capture"];
+  const photoTerms = ["photo", "photograph", "shot", "portrait", "candid", "capture", "film", "cinema"];
   for (const term of photoTerms) {
     if (text.includes(term)) {
       score += 0.05;
     }
+  }
+
+  // If no positive matches but also no negative matches, give benefit of doubt
+  // (platform search is trusted)
+  if (!hasPositiveMatch && score >= 0.35) {
+    score = 0.45;
   }
 
   return Math.max(0, Math.min(1, score));

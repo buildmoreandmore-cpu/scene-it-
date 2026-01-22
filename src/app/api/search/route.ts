@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Score and rank images by relevance (only use title/description, not URL)
+    // Trust platform search results - only filter out clearly irrelevant content
     const scoredImages = filteredImages
       .map((img) => ({
         ...img,
@@ -112,10 +113,10 @@ export async function POST(request: NextRequest) {
           intent
         ),
       }))
-      .filter((img) => img.relevance > 0.2) // Lower threshold to show more results
+      .filter((img) => img.relevance > 0.15) // Very low threshold - trust platform search
       .sort((a, b) => b.relevance - a.relevance);
 
-    console.log("[Search API] After filtering:", scoredImages.length, "images");
+    console.log("[Search API] After scoring:", scoredImages.length, "images (from", filteredImages.length, "filtered)");
 
     return NextResponse.json({
       images: scoredImages,
