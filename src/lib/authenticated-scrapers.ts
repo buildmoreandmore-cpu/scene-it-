@@ -255,12 +255,45 @@ export async function scrapeShotdeckAuth(query: string, limit = 30): Promise<Scr
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     );
 
-    // Login
-    await page.goto("https://shotdeck.com/login", { waitUntil: "networkidle2", timeout: 30000 });
-    await page.waitForSelector('input[type="email"]', { timeout: 10000 });
-    await page.type('input[type="email"]', SHOTDECK_EMAIL);
+    // Login - use the correct URL
+    await page.goto("https://shotdeck.com/welcome/login", { waitUntil: "networkidle2", timeout: 30000 });
+
+    // Wait for dynamic form to render
+    await new Promise((r) => setTimeout(r, 3000));
+
+    // Try multiple selectors for email input
+    const emailSelector = await page.evaluate(() => {
+      const inputs = document.querySelectorAll('input');
+      for (const input of inputs) {
+        const type = input.type?.toLowerCase();
+        const placeholder = input.placeholder?.toLowerCase() || '';
+        const name = input.name?.toLowerCase() || '';
+        if (type === 'email' || placeholder.includes('email') || name.includes('email')) {
+          return `input[type="${input.type}"]${input.name ? `[name="${input.name}"]` : ''}`;
+        }
+      }
+      // Fallback to first text/email input
+      const firstInput = document.querySelector('input[type="text"], input[type="email"]');
+      return firstInput ? 'input[type="text"], input[type="email"]' : null;
+    });
+
+    if (!emailSelector) {
+      console.log("[Shotdeck] Could not find email input");
+      await page.close();
+      return [];
+    }
+
+    await page.type(emailSelector, SHOTDECK_EMAIL);
     await page.type('input[type="password"]', SHOTDECK_PASSWORD);
-    await page.click('button[type="submit"]');
+
+    // Click submit button
+    const submitButton = await page.$('button[type="submit"], input[type="submit"], button:contains("Submit"), button:contains("Log")');
+    if (submitButton) {
+      await submitButton.click();
+    } else {
+      await page.keyboard.press('Enter');
+    }
+
     await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 30000 }).catch(() => {});
 
     // Search
